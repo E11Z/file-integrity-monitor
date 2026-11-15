@@ -8,6 +8,7 @@ import shutil
 from pathlib import Path
 
 DEFAULT_DIR = "sample_data"
+MARKER = ".fim_sample"
 
 # Plausible-looking but entirely fictional files, like a small web app's config folder.
 SAMPLE_FILES = {
@@ -57,10 +58,14 @@ def main(argv: list[str] | None = None) -> int:
         tamper(args.dir)
         print(f"Tampered with {args.dir}: 1 changed, 1 deleted, 1 added")
         return 0
-    # Start clean so leftovers from an earlier --tamper don't leak into a new baseline.
+    # Start clean so leftovers from an earlier --tamper don't leak into a new baseline,
+    # but only wipe folders we created, never an arbitrary path the user typed by mistake.
     if args.dir.exists():
+        if not (args.dir / MARKER).is_file():
+            parser.error(f"{args.dir} exists and was not created by this script, refusing to delete it")
         shutil.rmtree(args.dir)
     files = write_samples(args.dir, args.seed)
+    (args.dir / MARKER).write_text("created by generate_sample_data.py\n")
     print(f"Wrote {len(files)} fake files to {args.dir}")
     return 0
 
